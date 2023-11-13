@@ -32,7 +32,23 @@ func StartBridge(cfg *utils.MueckeConfig) {
 	// now subscibe with the paho client to the bridge topic, can only be done
 	// after the server is running
 	remoteToLocal := func(client mqtt.Client, message mqtt.Message) {
+		println("RemoteToLocal received")
 		appName := message.Topic()[strings.LastIndex(message.Topic(), "/")+1:]
+
+		//check if appName is in the config
+		found := false
+		for _, appCfg := range cfg.AppConfigs {
+			if appCfg.AppName == appName {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Printf("App %s not found in config", appName)
+			return
+		}
+
 		server.Server.Publish("to/"+appName, message.Payload(), false, 2)
 	}
 

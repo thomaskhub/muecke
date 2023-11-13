@@ -6,6 +6,4 @@ remote_broker:
   bridge_topic: remote-bridge
 
 app_configs:
-  - app_name: App1
-  - app_name: App2
-  - app_name: App3
+  - app_name: mqtt-docker-sdk

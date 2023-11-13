@@ -14,6 +14,13 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
 
+type Topic struct {
+	Topic string
+	Cb    mqtt.MessageHandler
+}
+
+var topicList []Topic
+
 func NewMqttClientWithConfig(broker string, clientId string, username string, password string) *MqttClient {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
@@ -21,10 +28,24 @@ func NewMqttClientWithConfig(broker string, clientId string, username string, pa
 	opts.SetUsername(username)
 	opts.SetPassword(password)
 	opts.SetDefaultPublishHandler(messagePubHandler)
+	opts.SetConnectRetry(true)
+	opts.SetAutoReconnect(true)
+	opts.SetResumeSubs(true)
 
-	opts.OnConnect = func(client mqtt.Client) {}
+	opts.SetOnConnectHandler(func(client mqtt.Client) {
+		for _, topic := range topicList {
+			token := client.Subscribe(topic.Topic, 2, topic.Cb)
+			token.Wait()
+		}
+	})
 
-	opts.OnReconnecting = func(client mqtt.Client, options *mqtt.ClientOptions) {}
+	opts.OnConnectionLost = func(client mqtt.Client, err error) {
+		fmt.Printf("Connection lost: %v", err)
+	}
+
+	opts.OnReconnecting = func(client mqtt.Client, options *mqtt.ClientOptions) {
+		fmt.Printf("Reconnecting:\n")
+	}
 
 	client := mqtt.NewClient(opts)
 
@@ -45,7 +66,7 @@ func (m *MqttClient) Disconnect() {
 	m.client.Disconnect(0)
 }
 
-func (m *MqttClient) Publish(topic string, payload string, qos byte) {
+func (m *MqttClient) Publish(topic string, payload interface{}, qos byte) {
 	token := m.client.Publish(topic, qos, false, payload)
 	token.Wait()
 }
