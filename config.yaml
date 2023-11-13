@@ -1,0 +1,11 @@
+remote_broker:
+  broker: tcp://127.0.0.1:1883
+  client_id: my-client
+  username: my-username
+  password: my-password
+  bridge_topic: remote-bridge
+
+app_configs:
+  - app_name: App1
+  - app_name: App2
+  - app_name: App3
